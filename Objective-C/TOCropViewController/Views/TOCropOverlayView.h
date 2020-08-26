@@ -1,7 +1,7 @@
 //
 //  TOCropOverlayView.h
 //
-//  Copyright 2015-2018 Timothy Oliver. All rights reserved.
+//  Copyright 2015-2017 Timothy Oliver. All rights reserved.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to
@@ -22,8 +22,6 @@
 
 #import <UIKit/UIKit.h>
 
-NS_ASSUME_NONNULL_BEGIN
-
 @interface TOCropOverlayView : UIView
 
 /** Hides the interior grid lines, sans animation. */
@@ -39,5 +37,3 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setGridHidden:(BOOL)hidden animated:(BOOL)animated;
 
 @end
-
-NS_ASSUME_NONNULL_END

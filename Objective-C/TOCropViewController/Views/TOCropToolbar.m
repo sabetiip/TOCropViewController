@@ -1,7 +1,7 @@
 //
 //  TOCropToolbar.h
 //
-//  Copyright 2015-2018 Timothy Oliver. All rights reserved.
+//  Copyright 2015-2017 Timothy Oliver. All rights reserved.
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
 //  of this software and associated documentation files (the "Software"), to
@@ -22,7 +22,7 @@
 
 #import "TOCropToolbar.h"
 
-#define TOCROPTOOLBAR_DEBUG_SHOWING_BUTTONS_CONTAINER_RECT 0   // convenience debug toggle
+#define TOCROPTOOLBAR_DEBUG_SHOWING_BUTTONS_CONTAINER_RECT     0   // convenience debug toggle
 
 @interface TOCropToolbar()
 
@@ -67,18 +67,26 @@
         self.reverseContentLayout = [[[NSLocale preferredLanguages] objectAtIndex:0] hasPrefix:@"ar"];
     }
     
-    // Get the resource bundle depending on the framework/dependency manager we're using
-    NSBundle *resourceBundle = TO_CROP_VIEW_RESOURCE_BUNDLE_FOR_OBJECT(self);
+    // In CocoaPods, strings are stored in a separate bundle from the main one
+    NSBundle *resourceBundle = nil;
+    NSBundle *classBundle = [NSBundle bundleForClass:[self class]];
+    NSURL *resourceBundleURL = [classBundle URLForResource:@"TOCropViewControllerBundle" withExtension:@"bundle"];
+    if (resourceBundleURL) {
+        resourceBundle = [[NSBundle alloc] initWithURL:resourceBundleURL];
+    }
+    else {
+        resourceBundle = classBundle;
+    }
     
     _doneTextButton = [UIButton buttonWithType:UIButtonTypeSystem];
     [_doneTextButton setTitle: _doneTextButtonTitle ?
-        _doneTextButtonTitle : NSLocalizedStringFromTableInBundle(@"Done",
-																  @"TOCropViewControllerLocalizable",
-																  resourceBundle,
+        _doneTextButtonTitle : NSLocalizedStringFromTableInBundle(@"تایید",
+                                                                  @"TOCropViewControllerLocalizable",
+                                                                  resourceBundle,
                                                                   nil)
                      forState:UIControlStateNormal];
-    [_doneTextButton setTitleColor:[UIColor colorWithRed:1.0f green:0.8f blue:0.0f alpha:1.0f] forState:UIControlStateNormal];
-    [_doneTextButton.titleLabel setFont:[UIFont systemFontOfSize:17.0f]];
+    [_doneTextButton setTitleColor:[UIColor colorWithRed:156/255.0 green:217/255.0 blue:150/255.0 alpha:1.0f] forState:UIControlStateNormal];
+    [_doneTextButton.titleLabel setFont:[UIFont fontWithName:@"IRANSansWeb(FaNum)" size:15]];
     [_doneTextButton addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [_doneTextButton sizeToFit];
     [self addSubview:_doneTextButton];
@@ -92,12 +100,13 @@
     _cancelTextButton = [UIButton buttonWithType:UIButtonTypeSystem];
     
     [_cancelTextButton setTitle: _cancelTextButtonTitle ?
-        _cancelTextButtonTitle : NSLocalizedStringFromTableInBundle(@"Cancel",
-																	@"TOCropViewControllerLocalizable",
-																	resourceBundle,
+        _cancelTextButtonTitle : NSLocalizedStringFromTableInBundle(@"لغو",
+                                                                    @"TOCropViewControllerLocalizable",
+                                                                    resourceBundle,
                                                                     nil)
                        forState:UIControlStateNormal];
-    [_cancelTextButton.titleLabel setFont:[UIFont systemFontOfSize:17.0f]];
+    [_cancelTextButton setTitleColor:[UIColor lightGrayColor] forState:UIControlStateNormal];
+    [_cancelTextButton.titleLabel setFont:[UIFont fontWithName:@"IRANSansWeb(FaNum)" size:15]];
     [_cancelTextButton addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [_cancelTextButton sizeToFit];
     [self addSubview:_cancelTextButton];
@@ -144,10 +153,10 @@
     BOOL verticalLayout = (CGRectGetWidth(self.bounds) < CGRectGetHeight(self.bounds));
     CGSize boundsSize = self.bounds.size;
     
-    self.cancelIconButton.hidden = self.cancelButtonHidden || (!verticalLayout);
-    self.cancelTextButton.hidden = self.cancelButtonHidden || (verticalLayout);
-    self.doneIconButton.hidden   = self.doneButtonHidden || (!verticalLayout);
-    self.doneTextButton.hidden   = self.doneButtonHidden || (verticalLayout);
+    self.cancelIconButton.hidden = (!verticalLayout);
+    self.cancelTextButton.hidden = (verticalLayout);
+    self.doneIconButton.hidden   = (!verticalLayout);
+    self.doneTextButton.hidden   = (verticalLayout);
 
     CGRect frame = self.bounds;
     frame.origin.x -= self.backgroundViewOutsets.left;
@@ -220,9 +229,7 @@
             [buttonsInOrderHorizontally addObject:self.rotateCounterclockwiseButton];
         }
         
-        if (!self.resetButtonHidden) {
-            [buttonsInOrderHorizontally addObject:self.resetButton];
-        }
+        [buttonsInOrderHorizontally addObject:self.resetButton];
         
         if (!self.clampButtonHidden) {
             [buttonsInOrderHorizontally addObject:self.clampButton];
@@ -231,6 +238,7 @@
         if (!self.rotateClockwiseButtonHidden) {
             [buttonsInOrderHorizontally addObject:self.rotateClockwiseButton];
         }
+        
         [self layoutToolbarButtons:buttonsInOrderHorizontally withSameButtonSize:buttonSize inContainerRect:containerRect horizontally:YES];
     }
     else {
@@ -258,9 +266,7 @@
             [buttonsInOrderVertically addObject:self.rotateCounterclockwiseButton];
         }
         
-        if (!self.resetButtonHidden) {
-            [buttonsInOrderVertically addObject:self.resetButton];
-        }
+        [buttonsInOrderVertically addObject:self.resetButton];
         
         if (!self.clampButtonHidden) {
             [buttonsInOrderVertically addObject:self.clampButton];
@@ -277,24 +283,22 @@
 // The convenience method for calculating button's frame inside of the container rect
 - (void)layoutToolbarButtons:(NSArray *)buttons withSameButtonSize:(CGSize)size inContainerRect:(CGRect)containerRect horizontally:(BOOL)horizontally
 {
-    if (buttons.count > 0){
-        NSInteger count = buttons.count;
-        CGFloat fixedSize = horizontally ? size.width : size.height;
-        CGFloat maxLength = horizontally ? CGRectGetWidth(containerRect) : CGRectGetHeight(containerRect);
-        CGFloat padding = (maxLength - fixedSize * count) / (count + 1);
-        
-        for (NSInteger i = 0; i < count; i++) {
-            UIView *button = buttons[i];
-            CGFloat sameOffset = horizontally ? fabs(CGRectGetHeight(containerRect)-CGRectGetHeight(button.bounds)) : fabs(CGRectGetWidth(containerRect)-CGRectGetWidth(button.bounds));
-            CGFloat diffOffset = padding + i * (fixedSize + padding);
-            CGPoint origin = horizontally ? CGPointMake(diffOffset, sameOffset) : CGPointMake(sameOffset, diffOffset);
-            if (horizontally) {
-                origin.x += CGRectGetMinX(containerRect);
-            } else {
-                origin.y += CGRectGetMinY(containerRect);
-            }
-            button.frame = (CGRect){origin, size};
+    NSInteger count = buttons.count;
+    CGFloat fixedSize = horizontally ? size.width : size.height;
+    CGFloat maxLength = horizontally ? CGRectGetWidth(containerRect) : CGRectGetHeight(containerRect);
+    CGFloat padding = (maxLength - fixedSize * count) / (count + 1);
+    
+    for (NSInteger i = 0; i < count; i++) {
+        UIView *button = buttons[i];
+        CGFloat sameOffset = horizontally ? fabs(CGRectGetHeight(containerRect)-CGRectGetHeight(button.bounds)) : fabs(CGRectGetWidth(containerRect)-CGRectGetWidth(button.bounds));
+        CGFloat diffOffset = padding + i * (fixedSize + padding);
+        CGPoint origin = horizontally ? CGPointMake(diffOffset, sameOffset) : CGPointMake(sameOffset, diffOffset);
+        if (horizontally) {
+            origin.x += CGRectGetMinX(containerRect);
+        } else {
+            origin.y += CGRectGetMinY(containerRect);
         }
+        button.frame = (CGRect){origin, size};
     }
 }
 
@@ -366,22 +370,6 @@
 - (void)setResetButtonEnabled:(BOOL)resetButtonEnabled
 {
     self.resetButton.enabled = resetButtonEnabled;
-}
-
-- (void)setDoneButtonHidden:(BOOL)doneButtonHidden {
-    if (_doneButtonHidden == doneButtonHidden)
-        return;
-    
-    _doneButtonHidden = doneButtonHidden;
-    [self setNeedsLayout];
-}
-
-- (void)setCancelButtonHidden:(BOOL)cancelButtonHidden {
-    if (_cancelButtonHidden == cancelButtonHidden)
-        return;
-    
-    _cancelButtonHidden = cancelButtonHidden;
-    [self setNeedsLayout];
 }
 
 - (CGRect)doneButtonFrame
@@ -608,16 +596,6 @@
     [self setNeedsLayout];
 }
 
-- (void)setResetButtonHidden:(BOOL)resetButtonHidden
-{
-    if (_resetButtonHidden == resetButtonHidden) {
-        return;
-    }
-    
-    _resetButtonHidden = resetButtonHidden;
-    
-    [self setNeedsLayout];
-}
 - (UIButton *)rotateButton
 {
     return self.rotateCounterclockwiseButton;
@@ -627,15 +605,6 @@
 {
     _statusBarHeightInset = statusBarHeightInset;
     [self setNeedsLayout];
-}
-
-- (UIView *)visibleCancelButton
-{
-    if (self.cancelIconButton.hidden == NO) {
-        return self.cancelIconButton;
-    }
-
-    return self.cancelTextButton;
 }
 
 @end
